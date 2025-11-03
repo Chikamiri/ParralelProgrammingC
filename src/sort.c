@@ -1,5 +1,4 @@
 #include "sort.h"
-#include <stdio.h>
 
 void insertionSortAscending(int arr[], int n) {
   for (int i = 1; i < n; i++) {
@@ -23,10 +22,4 @@ void insertionSortDescending(int arr[], int n) {
     }
     arr[j + 1] = key;
   }
-}
-
-void printArray(int arr[], int n) {
-  for (int i = 0; i < n; i++)
-    printf("%d ", arr[i]);
-  printf("\n");
 }
