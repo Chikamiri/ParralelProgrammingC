@@ -1,0 +1,8 @@
+Version,Processes,ArraySize,Time
+Sequential,1,100000,2.644992
+MPI,2,100000,seconds
+MPI,4,100000,seconds
+MPI,6,100000,seconds
+MPI,8,100000,
+MPI,10,100000,
+MPI,12,100000,
