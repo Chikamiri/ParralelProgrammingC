@@ -26,8 +26,8 @@ target_compile_options(omp PRIVATE -fopenmp)
 target_link_libraries(omp PRIVATE -fopenmp)
 
 # pthread
-target_compile_options(pthread PRIVATE -pthread)
-target_link_libraries(pthread PRIVATE -pthread)
+target_compile_options(pthread PRIVATE -lpthread)
+target_link_libraries(pthread PRIVATE -lpthread)
 
 # ---- Chỉ bật MPI trên Linux/WSL ----
 if(UNIX)
