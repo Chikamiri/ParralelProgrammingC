@@ -14,7 +14,7 @@ typedef struct {
 // Nhận dữ liệu và gọi hàm sắp xếp tuần tự trên đoạn mảng của nó.
 void *sort_worker(void *arg) {
   thread_arg_t *data = (thread_arg_t *)arg;
-  insertionSortAscending(data->arr, data->size);
+  insertionSort(data->arr, data->size, 1); // 1 for ascending
   pthread_exit(NULL);
 }
 

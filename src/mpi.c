@@ -64,7 +64,7 @@ int main(int argc, char *argv[]) {
 
   double start_time = MPI_Wtime();
 
-  insertionSortAscending(local_arr, local_n);
+  insertionSort(local_arr, local_n, 1); // 1 for ascending
 
   int *gathered_arr = NULL;
   if (rank == 0) {
