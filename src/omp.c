@@ -3,55 +3,84 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void insertionSort_omp(int arr[], int n) {
-  // Hint: A simple approach is to parallelize the outer loop with '#pragma omp
-  // parallel for'. However, insertion sort has dependencies that make this
-  // inefficient. A better strategy is a parallel merge sort: divide the array,
-  // sort chunks in parallel, then merge. This function is a placeholder. For a
-  // real implementation, consider a different algorithm.
-
-  // Placeholder: calling sequential sort
-  insertionSortAscending(arr, n);
-}
-
 int main(int argc, char *argv[]) {
-  if (argc != 2) {
-    fprintf(stderr, "Usage: %s <array_size>\n", argv[0]);
-    return 1;
-  }
+    if (argc != 2) {
+        printf("Usage: %s <array_size>\n", argv[0]);
+        return 1;
+    }
 
-  int n = atoi(argv[1]);
-  if (n <= 0) {
-    fprintf(stderr, "Array size must be a positive integer.\n");
-    return 1;
-  }
+    int n = atoi(argv[1]);
+    if (n <= 0) {
+        printf("Array size must be positive integer\n");
+        return 1;
+    }
 
-  int *arr = (int *)malloc(n * sizeof(int));
-  generate_array(arr, n);
+    // Generate random array
+    int *arr = malloc(n * sizeof(int));
+    generate_array(arr, n);
 
-  printf("OpenMP Insertion Sort (Placeholder)\n");
-  printf("Array size: %d\n", n);
+    printf("Array size: %d\n", n);
+    printf("Threads: 2, 4, 6, 8, 10, 12\n\n");
 
-  // Loop through specified thread counts for benchmarking
-  int p_values[] = {2, 4, 6, 8, 10, 12};
-  int num_p_values = sizeof(p_values) / sizeof(p_values[0]);
+    // Test sequential
+    int *arr_seq_asc = malloc(n * sizeof(int));
+    int *arr_seq_desc = malloc(n * sizeof(int));
 
-  for (int i = 0; i < num_p_values; i++) {
-    int p = p_values[i];
-    omp_set_num_threads(p);
+    copy_array(arr, arr_seq_asc, n);
+    double start = get_time();
+    insertionSort(arr_seq_asc, n, 1);
+    double seq_asc_time = get_time() - start;
 
-    int *arr_copy = (int *)malloc(n * sizeof(int));
-    copy_array(arr, arr_copy, n);
+    copy_array(arr, arr_seq_desc, n);
+    start = get_time();
+    insertionSort(arr_seq_desc, n, 0);
+    double seq_desc_time = get_time() - start;
 
-    double start_time = get_time();
-    insertionSort_omp(arr_copy, n);
-    double end_time = get_time();
+    printf("SEQUENTIAL:\n");
+    printf("Ascending:  %.6f seconds\n", seq_asc_time);
+    printf("Descending: %.6f seconds\n", seq_desc_time);
 
-    printf("Threads: %d, Execution time: %f seconds\n", p,
-           end_time - start_time);
-    free(arr_copy);
-  }
+    // Test parallel with different thread counts
+    printf("\nPARALLEL (OpenMP):\n");
+    printf("%-8s %-12s %-10s %-12s\n",
+           "Threads", "Time(s)", "Speedup", "Efficiency");
+    printf("%-8s %-12s %-10s %-12s\n",
+           "-------", "--------", "-------", "---------");
 
-  free(arr);
-  return 0;
+    int threads_list[] = {2, 4, 6, 8, 10, 12};
+
+    for (int i = 0; i < 6; i++) {
+        int p = threads_list[i];
+        omp_set_num_threads(p);
+
+        int *arr_par_asc = malloc(n * sizeof(int));
+        int *arr_par_desc = malloc(n * sizeof(int));
+
+        copy_array(arr, arr_par_asc, n);
+        start = get_time();
+        insertionSort_omp(arr_par_asc, n, 1);
+        double par_asc_time = get_time() - start;
+
+        copy_array(arr, arr_par_desc, n);
+        start = get_time();
+        insertionSort_omp(arr_par_desc, n, 0);
+        double par_desc_time = get_time() - start;
+
+        double avg_par_time = (par_asc_time + par_desc_time) / 2;
+        double avg_seq_time = (seq_asc_time + seq_desc_time) / 2;
+        double speedup = avg_seq_time / avg_par_time;
+        double efficiency = (speedup / p) * 100;
+
+        printf("%-8d %-12.6f %-10.2f %-11.1f%%\n",
+               p, avg_par_time, speedup, efficiency);
+
+        free(arr_par_asc);
+        free(arr_par_desc);
+    }
+
+    free(arr);
+    free(arr_seq_asc);
+    free(arr_seq_desc);
+
+    return 0;
 }
