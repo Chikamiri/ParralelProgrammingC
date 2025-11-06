@@ -3,79 +3,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void insertionSort_omp(int arr[], int n) {
-  if (n <= 1)
-    return;
-
-// Parallel insertion sort using OpenMP
-#pragma omp parallel
-  {
-#pragma omp single
-    {
-      for (int i = 1; i < n; i++) {
-        int key = arr[i];
-        int j = i - 1;
-
-        // Move elements that are greater than key to one position ahead
-        while (j >= 0 && arr[j] > key) {
-          arr[j + 1] = arr[j];
-          j--;
-        }
-        arr[j + 1] = key;
-
-        // Parallelize the shifting process for larger arrays
-        if (i % 100 == 0) {
-#pragma omp task
-          {
-            // This creates parallel tasks for every 100 elements
-            // helping with load distribution
-          }
-        }
-      }
-    }
-  }
-}
-
-// Alternative parallel approach: Sort chunks in parallel then merge
-void parallelInsertionSortChunks(int arr[], int n) {
-  int num_threads = omp_get_max_threads();
-  int chunk_size = n / num_threads;
-
-#pragma omp parallel for
-  for (int i = 0; i < num_threads; i++) {
-    int start = i * chunk_size;
-    int end = (i == num_threads - 1) ? n : (i + 1) * chunk_size;
-
-    // Sort each chunk using insertion sort
-    for (int j = start + 1; j < end; j++) {
-      int key = arr[j];
-      int k = j - 1;
-      while (k >= start && arr[k] > key) {
-        arr[k + 1] = arr[k];
-        k--;
-      }
-      arr[k + 1] = key;
-    }
-  }
-
-  // Sequential merge of sorted chunks (for simplicity)
-  // In a more advanced version, this could also be parallelized
-  for (int chunk = 1; chunk < num_threads; chunk++) {
-    int start = chunk * chunk_size;
-    int end = (chunk == num_threads - 1) ? n : (chunk + 1) * chunk_size;
-
-    for (int i = start; i < end; i++) {
-      int key = arr[i];
-      int j = i - 1;
-      while (j >= 0 && arr[j] > key) {
-        arr[j + 1] = arr[j];
-        j--;
-      }
-      arr[j + 1] = key;
-    }
-  }
-}
-
 int main(int argc, char *argv[]) {
   if (argc != 2) {
     fprintf(stderr, "Usage: %s <array_size>\n", argv[0]);
@@ -91,99 +18,48 @@ int main(int argc, char *argv[]) {
   int *arr = (int *)malloc(n * sizeof(int));
   generate_array(arr, n);
 
-  printf("OpenMP Insertion Sort Performance Analysis\n");
-  printf("Array size: %d\n", n);
-  printf("Array sample (first 10 elements): ");
-  for (int i = 0; i < 10 && i < n; i++) {
-    printf("%d ", arr[i]);
-  }
-  printf("\n\n");
-
-  // Test sequential version first
+  // ---- SEQ BASELINE ----
   int *arr_seq = (int *)malloc(n * sizeof(int));
   copy_array(arr, arr_seq, n);
 
   double seq_start = get_time();
-  insertionSortAscending(arr_seq, n);
+  insertionSort(arr_seq, n, 1);
   double seq_end = get_time();
+  double seq_time = seq_end - seq_start;
 
-  printf("Sequential execution time: %f seconds\n", seq_end - seq_start);
+  printf("OpenMP Insertion Sort\n");
+  printf("Array size: %d\n", n);
+  printf("Sequential time: %f s\n\n", seq_time);
 
-  // Verify the array is sorted
-  int is_sorted = 1;
-  for (int i = 1; i < n; i++) {
-    if (arr_seq[i] < arr_seq[i - 1]) {
-      is_sorted = 0;
-      break;
-    }
-  }
-  printf("Array sorted correctly: %s\n\n", is_sorted ? "Yes" : "No");
   free(arr_seq);
 
-  // Loop through specified thread counts for benchmarking
+  // ---- PARALLEL TEST ----
   int p_values[] = {2, 4, 6, 8, 10, 12};
-  int num_p_values = sizeof(p_values) / sizeof(p_values[0]);
+  int p_count = sizeof(p_values) / sizeof(p_values[0]);
 
-  printf("Parallel Performance Results:\n");
-  printf("Threads\tTime (s)\tSpeedup\t\tEfficiency\n");
-  printf("-------------------------------------------------\n");
+  printf("Threads\tTime(s)\tSpeedup\tEfficiency\n");
+  printf("--------------------------------------------\n");
 
-  for (int i = 0; i < num_p_values; i++) {
+  for (int i = 0; i < p_count; i++) {
     int p = p_values[i];
     omp_set_num_threads(p);
 
     int *arr_copy = (int *)malloc(n * sizeof(int));
     copy_array(arr, arr_copy, n);
 
-    double start_time = get_time();
-    insertionSort_omp(arr_copy, n);
-    double end_time = get_time();
+    double t0 = get_time();
+    insertionSort_omp(arr_copy, n, 1);
+    double t1 = get_time();
 
-    double parallel_time = end_time - start_time;
-    double speedup = (seq_end - seq_start) / parallel_time;
+    double par_time = t1 - t0;
+    double speedup = seq_time / par_time;
     double efficiency = speedup / p;
 
-    printf("%d\t%f\t%f\t%f\n", p, parallel_time, speedup, efficiency);
-
-    // Verify sorting result
-    is_sorted = 1;
-    for (int j = 1; j < n; j++) {
-      if (arr_copy[j] < arr_copy[j - 1]) {
-        is_sorted = 0;
-        break;
-      }
-    }
-
-    if (!is_sorted) {
-      printf("WARNING: Array not sorted correctly with %d threads!\n", p);
-    }
+    printf("%d\t%f\t%f\t%f\n", p, par_time, speedup, efficiency);
 
     free(arr_copy);
   }
 
-  // Test alternative parallel approach
-  printf("\nAlternative Approach - Chunk-based Parallel Sort:\n");
-  int *arr_chunk = (int *)malloc(n * sizeof(int));
-  copy_array(arr, arr_chunk, n);
-
-  double chunk_start = get_time();
-  parallelInsertionSortChunks(arr_chunk, n);
-  double chunk_end = get_time();
-
-  printf("Chunk-based parallel time: %f seconds\n", chunk_end - chunk_start);
-
-  // Verify sorting
-  is_sorted = 1;
-  for (int i = 1; i < n; i++) {
-    if (arr_chunk[i] < arr_chunk[i - 1]) {
-      is_sorted = 0;
-      break;
-    }
-  }
-  printf("Chunk-based sorted correctly: %s\n", is_sorted ? "Yes" : "No");
-
-  free(arr_chunk);
   free(arr);
-
   return 0;
 }
