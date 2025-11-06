@@ -11,23 +11,19 @@ add_library(sort STATIC
 )
 target_include_directories(sort PUBLIC ${SRC_DIR})
 
-# Exec không MPI (chạy được trên Win)
+# seq
 add_executable(seq ${SRC_DIR}/seq.c)
 target_link_libraries(seq PRIVATE sort)
 
-add_executable(omp ${SRC_DIR}/omp.c)
-target_link_libraries(omp PRIVATE sort)
-
-add_executable(pthread ${SRC_DIR}/pthread.c)
-target_link_libraries(pthread PRIVATE sort)
-
 # OpenMP
-target_compile_options(omp PRIVATE -fopenmp)
-target_link_libraries(omp PRIVATE -fopenmp)
+find_package(OpenMP REQUIRED)
+add_executable(omp ${SRC_DIR}/omp.c)
+target_link_libraries(omp PRIVATE sort OpenMP::OpenMP_C)
 
-# pthread
-target_compile_options(pthread PRIVATE -lpthread)
-target_link_libraries(pthread PRIVATE -lpthread)
+# pthread version
+find_package(Threads REQUIRED)
+add_executable(pthread ${SRC_DIR}/pthread.c)
+target_link_libraries(pthread PRIVATE sort Threads::Threads)
 
 # ---- Chỉ bật MPI trên Linux/WSL ----
 if(UNIX)
