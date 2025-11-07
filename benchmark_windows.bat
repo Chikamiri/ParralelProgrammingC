@@ -20,6 +20,8 @@ for /f "tokens=3" %%a in ('build\seq.exe %ARRAY_SIZE% ^| findstr "Execution"') d
     set SEQ_TIME=%%a
 )
 echo Sequential,1,%ARRAY_SIZE%,!SEQ_TIME! >> %RESULTS_FILE%
+echo " " >> $RESULTS_FILE
+
 
 echo === OpenMP ===
 for %%p in (%THREAD_COUNTS%) do (
@@ -27,6 +29,8 @@ for %%p in (%THREAD_COUNTS%) do (
         echo OpenMP,%%p,%ARRAY_SIZE%,%%t >> %RESULTS_FILE%
     )
 )
+echo " " >> $RESULTS_FILE
+
 
 echo === Pthreads ===
 for %%p in (%THREAD_COUNTS%) do (
@@ -34,6 +38,8 @@ for %%p in (%THREAD_COUNTS%) do (
         echo Pthreads,%%p,%ARRAY_SIZE%,%%t >> %RESULTS_FILE%
     )
 )
+echo " " >> $RESULTS_FILE
+
 
 echo Done. Results saved to %RESULTS_FILE%
 endlocal
