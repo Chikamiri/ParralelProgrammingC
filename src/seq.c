@@ -33,13 +33,13 @@ int main(int argc, char *argv[]) {
   double start_time = get_time();
   insertionSort(arr, n, 1); // 1 for ascending
   double end_time = get_time();
-  printf("Ascending sort time: %f seconds\n", end_time - start_time);
+  printf("Execution time: %f seconds\n", end_time - start_time);
 
   // Time and execute the descending sort
-  start_time = get_time();
-  insertionSort(arr_copy, n, 0); // 0 for descending
-  end_time = get_time();
-  printf("Descending sort time: %f seconds\n", end_time - start_time);
+  // start_time = get_time();
+  // insertionSort(arr_copy, n, 0); // 0 for descending
+  // end_time = get_time();
+  // printf("Descending sort time: %f seconds\n", end_time - start_time);
 
   // Clean up
   free(arr);

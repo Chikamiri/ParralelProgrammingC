@@ -1,0 +1,14 @@
+Version,Threads,ArraySize,Time 
+Sequential,1,100000,3.178394 
+OpenMP,2,100000,2.500391 
+OpenMP,4,100000,2.611976 
+OpenMP,6,100000,2.860629 
+OpenMP,8,100000,3.041564 
+OpenMP,10,100000,3.011363 
+OpenMP,12,100000,2.952832 
+Pthreads,2,100000,seconds 
+Pthreads,4,100000,seconds 
+Pthreads,6,100000,seconds 
+Pthreads,8,100000,seconds 
+Pthreads,10,100000,seconds 
+Pthreads,12,100000,seconds 

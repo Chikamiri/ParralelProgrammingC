@@ -20,10 +20,7 @@ void insertionSort(int arr[], int n, int ascending) {
 
 // ====================== OMP VERSION ====================== //
 void insertionSort_omp(int arr[], int n, int ascending) {
-  int num_threads;
-#pragma omp parallel
-  num_threads = omp_get_num_threads();
-
+  int num_threads = omp_get_max_threads();
   int chunk = n / num_threads;
 
 #pragma omp parallel
