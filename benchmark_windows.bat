@@ -7,6 +7,10 @@ set MERGE_VERSIONS=0 1 2
 set RESULTS_FILE=results_windows.csv
 set LOG_DIR=logs
 
+set MERGE_NAME_0=Serial
+set MERGE_NAME_1=Parallel
+set MERGE_NAME_2=Tree
+
 if exist build rmdir /s /q build
 mkdir build
 cd build
@@ -23,7 +27,7 @@ echo Version,Threads,ArraySize,MergeVersion,MergeTime,TotalTime > %RESULTS_FILE%
 echo === Sequential ===
 build\seq.exe %ARRAY_SIZE% > %LOG_DIR%\seq.log 2>&1
 for /f "tokens=5" %%a in ('findstr "Execution time" %LOG_DIR%\seq.log') do set SORT_TIME=%%a
-for /f "tokens=5" %%b in ('findstr "Total execution time" %LOG_DIR%\seq.log') do set TOTAL_TIME=%%b
+for /f "tokens=6" %%b in ('findstr "Total execution time" %LOG_DIR%\seq.log') do set TOTAL_TIME=%%b
 echo Sequential,1,%ARRAY_SIZE%,NA,!SORT_TIME!,!TOTAL_TIME! >> %RESULTS_FILE%
 
 :: ====================== OpenMP ======================
@@ -38,7 +42,8 @@ for %%p in (%THREAD_COUNTS%) do (
 
         for /f "tokens=5" %%s in ('findstr "Merge time" !LOG_FILE! ^| findstr /c:"Merge version: "') do set MERGE_TIME=%%s
         for /f "tokens=6" %%t in ('findstr "Total execution time" !LOG_FILE!') do (
-            echo OpenMP,%%p,%ARRAY_SIZE%,%%m,!MERGE_TIME!,%%t >> %RESULTS_FILE%
+            set MERGE_NAME=!MERGE_NAME_%%m!
+            echo OpenMP,%%p,%ARRAY_SIZE%,!MERGE_NAME!,!MERGE_TIME!,%%t >> %RESULTS_FILE%
         )
     )
 )
@@ -55,7 +60,8 @@ for %%p in (%THREAD_COUNTS%) do (
 
         for /f "tokens=5" %%s in ('findstr "Merge time" !LOG_FILE! ^| findstr /c:"Merge version: "') do set MERGE_TIME=%%s
         for /f "tokens=6" %%t in ('findstr "Total execution time" !LOG_FILE!') do (
-            echo Pthreads,%%p,%ARRAY_SIZE%,%%m,!MERGE_TIME!,%%t >> %RESULTS_FILE%
+            set MERGE_NAME=!MERGE_NAME_%%m!
+            echo Pthreads,%%p,%ARRAY_SIZE%,!MERGE_NAME!,!MERGE_TIME!,%%t >> %RESULTS_FILE%
         )
     )
 )
