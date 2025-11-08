@@ -43,12 +43,8 @@ done
 
 echo "=== MPI ==="
 for p in ${MPI_PROCESSES}; do
-    if [ $((ARRAY_SIZE % p)) -ne 0 ]; then
-        echo "Warning: Array size ${ARRAY_SIZE} is not divisible by MPI processes ${p}. Skipping."
-        continue
-    fi
     # mpiexec -n <p> ./mpi <array_size> <mode=1>
-    MPI_OUTPUT=$(mpiexec -n ${p} ./${BUILD_DIR}/mpi ${ARRAY_SIZE} 1)
+    MPI_OUTPUT=$(mpiexec --oversubscribe -n ${p} ./${BUILD_DIR}/mpi ${ARRAY_SIZE} 1)
     MPI_TIME=$(echo "${MPI_OUTPUT}" | grep "Execution time" | awk '{print $3}')
     echo "MPI,${p},${ARRAY_SIZE},${MPI_TIME}" >> ${RESULTS_FILE}
 done

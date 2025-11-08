@@ -46,10 +46,9 @@ int main(int argc, char *argv[]) {
 
   int n = atoi(argv[1]);
   int ascending = atoi(argv[2]);
-
   if (n <= 0) {
     if (rank == 0)
-      fprintf(stderr, "Array size must be a positive integer.\n");
+      fprintf(stderr, "Array size must be positive.\n");
     MPI_Finalize();
     return 1;
   }
@@ -60,19 +59,27 @@ int main(int argc, char *argv[]) {
     generate_array(global_arr, n);
   }
 
-  int local_n = n / size;
-  if (rank == 0 && n % size != 0) {
-    fprintf(stderr,
-            "Error: array_size must be divisible by number of processes.\n");
-    MPI_Abort(MPI_COMM_WORLD, 1);
+  int base = n / size;
+  int extra = n % size;
+
+  int *send_counts = (int *)malloc(size * sizeof(int));
+  int *displs = (int *)malloc(size * sizeof(int));
+
+  for (int i = 0; i < size; i++) {
+    send_counts[i] = base + (i < extra ? 1 : 0);
   }
+
+  displs[0] = 0;
+  for (int i = 1; i < size; i++)
+    displs[i] = displs[i - 1] + send_counts[i - 1];
+
+  int local_n = send_counts[rank];
   int *local_arr = (int *)malloc(local_n * sizeof(int));
 
-  MPI_Scatter(global_arr, local_n, MPI_INT, local_arr, local_n, MPI_INT, 0,
-              MPI_COMM_WORLD);
+  MPI_Scatterv(global_arr, send_counts, displs, MPI_INT, local_arr, local_n,
+               MPI_INT, 0, MPI_COMM_WORLD);
 
   double start_time = MPI_Wtime();
-
   insertionSort(local_arr, local_n, ascending);
 
   int *gathered_arr = NULL;
@@ -80,8 +87,8 @@ int main(int argc, char *argv[]) {
     gathered_arr = (int *)malloc(n * sizeof(int));
   }
 
-  MPI_Gather(local_arr, local_n, MPI_INT, gathered_arr, local_n, MPI_INT, 0,
-             MPI_COMM_WORLD);
+  MPI_Gatherv(local_arr, local_n, MPI_INT, gathered_arr, send_counts, displs,
+              MPI_INT, 0, MPI_COMM_WORLD);
 
   if (rank == 0) {
     int *temp_arr = (int *)malloc(n * sizeof(int));
@@ -98,7 +105,10 @@ int main(int argc, char *argv[]) {
     free(global_arr);
   }
 
+  free(send_counts);
+  free(displs);
   free(local_arr);
+
   MPI_Finalize();
   return 0;
 }
