@@ -1,0 +1,24 @@
+Pthreads Insertion Sort
+Array size: 100000
+Threads: 8
+Mode: Ascending
+Merge version: Serial
+Merge time: 0.002624 seconds
+Total execution time (sort+merge): 0.084314 seconds
+ 
+Pthreads Insertion Sort
+Array size: 100000
+Threads: 8
+Mode: Ascending
+Merge version: Parallel
+Merge time: 0.002163 seconds
+Total execution time (sort+merge): 0.083302 seconds
+ 
+Pthreads Insertion Sort
+Array size: 100000
+Threads: 8
+Mode: Ascending
+Merge version: Tree
+Merge time: 0.002309 seconds
+Total execution time (sort+merge): 0.085920 seconds
+ 

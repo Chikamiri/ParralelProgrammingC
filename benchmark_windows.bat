@@ -3,9 +3,10 @@ setlocal enabledelayedexpansion
 
 set ARRAY_SIZE=100000
 set THREAD_COUNTS=2 4 6 8 10 12
+set MERGE_VERSIONS=0 1 2
 set RESULTS_FILE=results_windows.csv
+set LOG_DIR=logs
 
-echo === Rebuild Project ===
 if exist build rmdir /s /q build
 mkdir build
 cd build
@@ -13,33 +14,52 @@ cmake -G "MinGW Makefiles" ..
 cmake --build .
 cd ..
 
-echo Version,Threads,ArraySize,Time > %RESULTS_FILE%
+if exist logs rmdir /s /q %LOG_DIR%
+mkdir %LOG_DIR%
 
+echo Version,Threads,ArraySize,MergeVersion,MergeTime,TotalTime > %RESULTS_FILE%
+
+:: ====================== Sequential ======================
 echo === Sequential ===
-for /f "tokens=3" %%a in ('build\seq.exe %ARRAY_SIZE% ^| findstr "Execution"') do (
-    set SEQ_TIME=%%a
-)
-echo Sequential,1,%ARRAY_SIZE%,!SEQ_TIME! >> %RESULTS_FILE%
-echo " " >> $RESULTS_FILE
+build\seq.exe %ARRAY_SIZE% > %LOG_DIR%\seq.log 2>&1
+for /f "tokens=5" %%a in ('findstr "Execution time" %LOG_DIR%\seq.log') do set SORT_TIME=%%a
+for /f "tokens=5" %%b in ('findstr "Total execution time" %LOG_DIR%\seq.log') do set TOTAL_TIME=%%b
+echo Sequential,1,%ARRAY_SIZE%,NA,!SORT_TIME!,!TOTAL_TIME! >> %RESULTS_FILE%
 
-
+:: ====================== OpenMP ======================
 echo === OpenMP ===
 for %%p in (%THREAD_COUNTS%) do (
-    for /f "tokens=3" %%t in ('build\omp.exe %ARRAY_SIZE% %%p ^| findstr "Execution"') do (
-        echo OpenMP,%%p,%ARRAY_SIZE%,%%t >> %RESULTS_FILE%
+    set LOG_FILE=%LOG_DIR%\omp-%%p.log
+    if exist !LOG_FILE! del !LOG_FILE!
+
+    for %%m in (%MERGE_VERSIONS%) do (
+        build\omp.exe %ARRAY_SIZE% %%p %%m >> !LOG_FILE! 2>&1
+        echo. >> !LOG_FILE!
+
+        for /f "tokens=5" %%s in ('findstr "Merge time" !LOG_FILE! ^| findstr /c:"Merge version: "') do set MERGE_TIME=%%s
+        for /f "tokens=6" %%t in ('findstr "Total execution time" !LOG_FILE!') do (
+            echo OpenMP,%%p,%ARRAY_SIZE%,%%m,!MERGE_TIME!,%%t >> %RESULTS_FILE%
+        )
     )
 )
-echo " " >> $RESULTS_FILE
 
-
+:: ====================== Pthreads ======================
 echo === Pthreads ===
 for %%p in (%THREAD_COUNTS%) do (
-    for /f "tokens=4" %%t in ('build\pthread.exe %ARRAY_SIZE% %%p 1^| findstr "Execution"') do (
-        echo Pthreads,%%p,%ARRAY_SIZE%,%%t >> %RESULTS_FILE%
+    set LOG_FILE=%LOG_DIR%\pthread-%%p.log
+    if exist !LOG_FILE! del !LOG_FILE!
+
+    for %%m in (%MERGE_VERSIONS%) do (
+        build\pthread.exe %ARRAY_SIZE% %%p 1 %%m >> !LOG_FILE! 2>&1
+        echo. >> !LOG_FILE!
+
+        for /f "tokens=5" %%s in ('findstr "Merge time" !LOG_FILE! ^| findstr /c:"Merge version: "') do set MERGE_TIME=%%s
+        for /f "tokens=6" %%t in ('findstr "Total execution time" !LOG_FILE!') do (
+            echo Pthreads,%%p,%ARRAY_SIZE%,%%m,!MERGE_TIME!,%%t >> %RESULTS_FILE%
+        )
     )
 )
-echo " " >> $RESULTS_FILE
-
 
 echo Done. Results saved to %RESULTS_FILE%
+echo All logs saved to %LOG_DIR%
 endlocal

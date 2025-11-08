@@ -1,0 +1,21 @@
+OpenMP Insertion Sort
+Array size: 100000
+Threads: 6
+Merge version: Serial
+Merge time: 0.002077 seconds
+Total execution time (sort+merge): 0.140255 seconds
+ 
+OpenMP Insertion Sort
+Array size: 100000
+Threads: 6
+Merge version: Parallel
+Merge time: 0.001798 seconds
+Total execution time (sort+merge): 0.138439 seconds
+ 
+OpenMP Insertion Sort
+Array size: 100000
+Threads: 6
+Merge version: Tree
+Merge time: 0.001877 seconds
+Total execution time (sort+merge): 0.150533 seconds
+ 

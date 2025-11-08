@@ -1,0 +1,209 @@
+1. 🛠️ Cải tiến Pthreads: Sáp nhập Cây Nhị phân (Binary Tree Merge)
+Code Pthreads hiện tại của anh đang thực hiện Sáp nhập Tuần tự Tuyến tính (Merge(B0, B1) \rightarrow Merge(Kết quả, B2) \rightarrow...). Cách này rất chậm vì nó tuần tự và phải làm việc trên các mảng ngày càng lớn.
+Gợi ý: Thay bằng Sáp nhập Cây Nhị phân (Logarithmic Merge)
+Anh nên tổ chức pha Merge theo cấu trúc cây nhị phân, giảm số lần lặp và chia nhỏ công việc (dù vẫn tuần tự, nhưng nhanh hơn nhiều).
+| Pha | Tuần tự Tuyến tính (Code cũ) | Sáp nhập Cây Nhị phân (Đề xuất) |
+|---|---|---|
+| Số bước | P-1 lần merge | \log_2 P bước (giai đoạn) merge |
+| Công việc | Merge mảng (k) vào mảng (k+1) | Merge các cặp mảng (0, 1), (2, 3), (4, 5), ... |
+Ý tưởng triển khai:
+ * Bắt đầu với P khối đã sắp xếp.
+ * Vòng lặp (Logarithmic Stages): Lặp lại \log_2 P lần, mỗi lần độ dài của khối được sáp nhập sẽ tăng gấp đôi.
+ * Merge Cặp: Trong mỗi lần lặp, tiến hành sáp nhập các cặp khối liền kề (ví dụ: khối i sáp nhập với khối i + size).
+Cấu trúc C code (Pseudo-code trong insertionSort_pthread):
+// Bỏ vòng for tuần tự cũ:
+// for (int i = 1; i < num_threads; i++) { ... }
+
+// Pha Sáp nhập Cây Nhị phân
+for (int size = chunk; size < n; size *= 2) {
+    // size: Độ dài của khối đã được sắp xếp sau mỗi giai đoạn
+    // i: Vị trí bắt đầu của các khối cần sáp nhập
+    for (int i = 0; i < n - size; i += 2 * size) {
+        int l = i;             // Bắt đầu khối 1
+        int m = i + size - 1;  // Kết thúc khối 1 / Bắt đầu khối 2
+        int r = i + 2 * size - 1; // Kết thúc khối 2 (Hoặc n-1 nếu chạm biên)
+        if (r > n - 1) {
+            r = n - 1;
+        }
+        
+        // merge_arrays(arr, l, m, r);
+        // Anh dùng hàm merge_arrays hiện tại của anh (trong sort.c)
+    }
+}
+
+2. 🛠️ Cải tiến OpenMP: Dùng Pha Merge Bổ sung
+OpenMP hiện tại của anh bị lỗi logic nghiêm trọng do thiếu Merge. Anh có thể áp dụng cấu trúc Sáp nhập Cây Nhị phân tương tự Pthreads, nhưng sử dụng OpenMP Parallel For để song song hóa vòng lặp for (int i = 0; i < n - size; i += 2 * size):
+Gợi ý: OpenMP Parallel Merge (Pairwise Parallelism)
+Chúng ta có thể dùng pragma omp for để chia sẻ công việc Sáp nhập các cặp khối giữa các luồng.
+Cấu trúc C code (trong insertionSort_omp):
+// 1. Pha Sort Cục bộ (Giữ nguyên)
+#pragma omp parallel {
+    // ... code insertionSort cục bộ ...
+}
+
+// 2. Pha Merge Song song
+for (int size = chunk; size < n; size *= 2) {
+#pragma omp parallel for
+    for (int i = 0; i < n - size; i += 2 * size) {
+        int l = i;
+        int m = i + size - 1;
+        int r = i + 2 * size - 1; 
+        if (r > n - 1) {
+            r = n - 1;
+        }
+
+        // Cần dùng một hàm merge_arrays(arr, l, m, r)
+        // **Lưu ý quan trọng:** Hàm merge_arrays phải dùng bộ đệm (buffer) tạm thời
+        // để tránh race condition khi các luồng khác nhau truy cập vào cùng mảng `arr` 
+        // ở cùng thời điểm (do `merge_arrays` của anh là in-place).
+        
+        // Để an toàn, anh nên đảm bảo các vùng dữ liệu (l, m, r) của các luồng là độc lập 
+        // trong vòng lặp này. (Trong Pairwise Merge, chúng là độc lập).
+    }
+}
+* Lợi ích: Pha Merge này song song và có độ phức tạp thời gian là O(n \log P), cải thiện đáng kể so với pha tuần tự O(n \log n) hoặc pha tuần tự tuyến tính cũ.
+3. 🛠️ Cải tiến MPI: Sáp nhập Song song trên Rank 0
+Trong MPI, anh đã dùng MPI_Gather để tập hợp các khối đã sắp xếp cục bộ về Rank 0. Bây giờ, Rank 0 có toàn bộ mảng đã sắp xếp cục bộ và cần thực hiện Sáp nhập toàn cục.
+Gợi ý: MPI Gather + OpenMP Merge trên Rank 0
+Thay vì để Rank 0 làm Merge Tuần tự, anh có thể kết hợp ưu điểm của OpenMP:
+ * Phân tán & Sắp xếp: Giữ nguyên MPI_Scatter và Insertion Sort cục bộ.
+ * Tập hợp: Giữ nguyên MPI_Gather để gửi về global_arr (trên Rank 0).
+ * Sáp nhập Song song: Chỉ Rank 0 thực hiện Sáp nhập Cây Nhị phân (như gợi ý OpenMP ở trên), nhưng sử dụng omp_set_num_threads để tận dụng các core vật lý trên máy chủ của Rank 0.
+Cấu trúc C code (trong mpi.c):
+// ... Sau MPI_Gather ...
+if (rank == 0) {
+    // Thiết lập số luồng OpenMP để tận dụng Rank 0
+    omp_set_num_threads(size_cores_of_rank0); 
+    
+    // Khởi tạo kích thước ban đầu của khối
+    int chunk = n / size;
+
+    // Pha Merge Song song (giống OpenMP)
+    for (int size = chunk; size < n; size *= 2) {
+        #pragma omp parallel for
+        for (int i = 0; i < n - size; i += 2 * size) {
+            // ... Logic tính l, m, r và gọi hàm merge_arrays (global_arr, l, m, r)
+        }
+    }
+}
+// ...
+
+* Lợi ích: Anh tận dụng được khả năng phân tán công việc (MPI) và chia sẻ bộ nhớ (OpenMP) để xử lý pha Merge, thường là một giải pháp rất hiệu quả.
+
+🛠️ Gợi ý Code OpenMP: Sáp nhập Song song Từng Cặp (Parallel Pairwise Merge)
+Phiên bản OpenMP ban đầu của anh bị lỗi logic do thiếu bước sáp nhập toàn cục. Chúng ta cần thêm bước Merge Cây Nhị phân và song song hóa nó bằng #pragma omp for.
+Ý tưởng cốt lõi
+ 
+Phase 1 (Sort): Các luồng (threads) sắp xếp cục bộ các khối dữ liệu của mình bằng insertionSort. (Giữ nguyên).
+Phase 2 (Merge): Lặp lại theo cấp số nhân (logarithmic stages). Trong mỗi giai đoạn, các luồng OpenMP sẽ song song thực hiện thao tác merge_arrays trên các cặp khối liền kề đã được sắp xếp.
+💻 Code C (Thêm vào insertionSort_omp trong sort.c)
+void insertionSort_omp(int arr[], int n, int ascending) {
+  int num_threads = omp_get_max_threads();
+  int chunk = n / num_threads;
+
+  // ====================== PHASE 1: PARALLEL LOCAL SORT ====================== //
+  #pragma omp parallel
+  {
+    int tid = omp_get_thread_num();
+    int start = tid * chunk;
+    // ... code insertionSort cục bộ (giữ nguyên) ...
+  }
+
+  // BỎ: Phần chèn tuần tự cũ gây bottleneck
+
+  // ====================== PHASE 2: LOGARITHMIC PARALLEL MERGE (Cây nhị phân) ====================== //
+  
+  // 'size' là độ dài của khối đã được sắp xếp sau mỗi giai đoạn
+  for (int size = chunk; size < n; size *= 2) { 
+    
+    // Song song hóa vòng lặp sáp nhập các cặp khối liền kề
+    #pragma omp parallel for
+    for (int i = 0; i < n - size; i += 2 * size) {
+      // i: Vị trí bắt đầu của khối cần sáp nhập
+      int l = i;             
+      int m = i + size - 1;  
+      int r = i + 2 * size - 1; 
+
+      // Đảm bảo không vượt quá biên mảng
+      if (r >= n) {
+        r = n - 1;
+      }
+      
+      // HÀM MERGE TẠM THỜI:
+      // Yêu cầu: merge_arrays phải sử dụng mảng đệm (temporary buffer) 
+      // để tránh race condition khi ghi đè dữ liệu. Anh có thể dùng hàm merge 
+      // tương tự như trong file mpi.c (sử dụng temp_arr).
+      merge_arrays(arr, l, m, r, ascending); 
+    }
+  }
+}
+Lưu ý quan trọng: Hàm merge_arrays mà anh sử dụng phải là phiên bản không tại chỗ (non-in-place), hoặc phải sử dụng một mảng tạm (temporary array) bên trong để lưu trữ dữ liệu sáp nhập. Nếu không, khi hai luồng cạnh nhau cùng đọc/ghi vào các ô nhớ chung, sẽ xảy ra Race Condition và kết quả bị sai.
+2. 🌐 Gợi ý Code MPI: Kết hợp Phân tán và Chia sẻ (Hybrid Merge)
+Trong MPI, công việc Sắp xếp đã được phân tán cho các tiến trình (Process), nhưng công việc Sáp nhập cần được xử lý tại Rank 0.
+Ý tưởng cốt lõi
+ * Phase 1 (Sort): Các tiến trình sắp xếp cục bộ. (Giữ nguyên MPI_Scatter và insertionSort).
+ * Phase 2 (Gather): MPI_Gather dữ liệu về Rank 0. (Giữ nguyên).
+ * Phase 3 (Hybrid Merge): Rank 0 sử dụng OpenMP để song song hóa quá trình Sáp nhập Cây Nhị phân trên mảng toàn cục. Đây là mô hình Hybrid MPI/OpenMP.
+💻 Code C (Thêm vào mpi.c tại if (rank == 0))
+File mpi.c của anh đã có sẵn hàm merge và merge_sort (dù chưa được dùng). Em sẽ dùng hàm merge đó cho pha này.
+// ... Sau MPI_Gather ...
+
+double end_sort_time = MPI_Wtime(); // Thời gian sắp xếp cục bộ kết thúc
+// NOTE: Anh có thể tính thời gian song song là từ start_time đến hết pha Merge.
+
+if (rank == 0) {
+  // === PHASE 3: HYBRID MERGE (Rank 0 dùng OpenMP để sáp nhập song song) ===
+  
+  // Tạo mảng tạm cho hàm merge (cần thiết cho merge_sort)
+  int *temp_arr = (int *)malloc(n * sizeof(int));
+  
+  // Sử dụng OpenMP trên Rank 0 để tăng tốc pha Merge
+  // Anh có thể đặt số luồng OpenMP = số core vật lý của máy
+  int omp_threads_on_rank0 = 8; // Đặt thủ công, ví dụ 8
+  omp_set_num_threads(omp_threads_on_rank0); 
+
+  int chunk = n / size; // Kích thước khối ban đầu
+
+  // Pha Sáp nhập Cây Nhị phân
+  for (int current_size = chunk; current_size < n; current_size *= 2) {
+    #pragma omp parallel for
+    for (int i = 0; i < n - current_size; i += 2 * current_size) {
+      int left = i;
+      int mid = i + current_size - 1;
+      int right = i + 2 * current_size - 1;
+      
+      if (right >= n) {
+        right = n - 1;
+      }
+
+      // Dùng hàm merge có sẵn trong mpi.c (sử dụng temp_arr)
+      // Anh cần đảm bảo hàm merge của anh đủ mạnh để xử lý các khối lớn.
+      merge(gathered_arr, temp_arr, left, mid, right, ascending);
+    }
+  }
+
+  // Kết thúc Merge
+  double end_time = MPI_Wtime();
+  printf("Execution time: %f seconds\\n", end_time - start_time);
+  
+  free(temp_arr);
+} 
+// ...
+
+Tại sao lại là Hybrid?
+ * Việc sắp xếp cục bộ là công việc Phân tán (Distribution) hoàn hảo cho MPI.
+ * Việc sáp nhập toàn cục cần truy cập toàn bộ mảng, nên việc thực hiện nó bằng Shared Memory (OpenMP) trên Rank 0 sẽ hiệu quả hơn việc phân phối Merge cho các Rank khác (sẽ tốn rất nhiều chi phí truyền thông).
+ * Đây là một kỹ thuật chuẩn mực được gọi là Hybrid Parallelism trong High-Performance Computing (HPC).
+
+
+Tách merge thành 3 hàm: serial / parallel / tree
+
+Thêm đo thời gian merge riêng trong các hàm sort OMP/Pthread/MPI
+
+Thêm tham số chọn version merge (enum hoặc macro)
+
+Sửa script benchmark CSV: thêm cột MergeVersion
+
+Chạy benchmark từng version merge, tất cả thread/process
+
+Xuất kết quả, vẽ đồ thị phân tích hiệu năng
