@@ -12,7 +12,14 @@ void insertionSort_omp(int arr[], int n, int ascending, MergeVersion merge_ver);
 void insertionSort_pthread(int arr[], int n, int num_threads, int ascending,
                            MergeVersion merge_ver);
 
-// Legacy functions for compatibility with older main files
+// Merge functions (for MPI use)
+void merge_serial(int arr[], int l, int m, int r, int ascending);
+void merge_parallel(int arr[], int chunk_starts[], int chunk_sizes[],
+                    int num_chunks, int ascending);
+void merge_tree(int arr[], int chunk_starts[], int chunk_sizes[],
+                int num_chunks, int ascending);
+
+// Legacy functions for compatibility
 void insertionSortAscending(int arr[], int n);
 void insertionSortDescending(int arr[], int n);
 

@@ -26,8 +26,8 @@ echo Version,Threads,ArraySize,MergeVersion,MergeTime,TotalTime > %RESULTS_FILE%
 :: ====================== Sequential ======================
 echo === Sequential ===
 build\seq.exe %ARRAY_SIZE% > %LOG_DIR%\seq.log 2>&1
-for /f "tokens=5" %%a in ('findstr "Execution time" %LOG_DIR%\seq.log') do set SORT_TIME=%%a
-for /f "tokens=6" %%b in ('findstr "Total execution time" %LOG_DIR%\seq.log') do set TOTAL_TIME=%%b
+for /f "tokens=3" %%a in ('findstr "Execution time" %LOG_DIR%\seq.log') do set SORT_TIME=%%a
+for /f "tokens=4" %%b in ('findstr "Total execution time" %LOG_DIR%\seq.log') do set TOTAL_TIME=%%b
 echo Sequential,1,%ARRAY_SIZE%,NA,!SORT_TIME!,!TOTAL_TIME! >> %RESULTS_FILE%
 
 :: ====================== OpenMP ======================
@@ -37,14 +37,15 @@ for %%p in (%THREAD_COUNTS%) do (
     if exist !LOG_FILE! del !LOG_FILE!
 
     for %%m in (%MERGE_VERSIONS%) do (
+        echo Merge version: !MERGE_NAME_%%m! >> !LOG_FILE!
         build\omp.exe %ARRAY_SIZE% %%p %%m >> !LOG_FILE! 2>&1
         echo. >> !LOG_FILE!
 
-        for /f "tokens=5" %%s in ('findstr "Merge time" !LOG_FILE! ^| findstr /c:"Merge version: "') do set MERGE_TIME=%%s
-        for /f "tokens=6" %%t in ('findstr "Total execution time" !LOG_FILE!') do (
-            set MERGE_NAME=!MERGE_NAME_%%m!
-            echo OpenMP,%%p,%ARRAY_SIZE%,!MERGE_NAME!,!MERGE_TIME!,%%t >> %RESULTS_FILE%
-        )
+        for /f "tokens=3" %%s in ('findstr "Merge time" !LOG_FILE!') do set MERGE_TIME=%%s
+        for /f "tokens=4" %%t in ('findstr "Total execution time" !LOG_FILE!') do set TOTAL_TIME=%%t
+
+        set MERGE_NAME=!MERGE_NAME_%%m!
+        echo OpenMP,%%p,%ARRAY_SIZE%,!MERGE_NAME!,!MERGE_TIME!,!TOTAL_TIME! >> %RESULTS_FILE%
     )
 )
 
@@ -55,14 +56,15 @@ for %%p in (%THREAD_COUNTS%) do (
     if exist !LOG_FILE! del !LOG_FILE!
 
     for %%m in (%MERGE_VERSIONS%) do (
+        echo Merge version: !MERGE_NAME_%%m! >> !LOG_FILE!
         build\pthread.exe %ARRAY_SIZE% %%p 1 %%m >> !LOG_FILE! 2>&1
         echo. >> !LOG_FILE!
 
-        for /f "tokens=5" %%s in ('findstr "Merge time" !LOG_FILE! ^| findstr /c:"Merge version: "') do set MERGE_TIME=%%s
-        for /f "tokens=6" %%t in ('findstr "Total execution time" !LOG_FILE!') do (
-            set MERGE_NAME=!MERGE_NAME_%%m!
-            echo Pthreads,%%p,%ARRAY_SIZE%,!MERGE_NAME!,!MERGE_TIME!,%%t >> %RESULTS_FILE%
-        )
+        for /f "tokens=3" %%s in ('findstr "Merge time" !LOG_FILE!') do set MERGE_TIME=%%s
+        for /f "tokens=4" %%t in ('findstr "Total execution time" !LOG_FILE!') do set TOTAL_TIME=%%t
+
+        set MERGE_NAME=!MERGE_NAME_%%m!
+        echo Pthreads,%%p,%ARRAY_SIZE%,!MERGE_NAME!,!MERGE_TIME!,!TOTAL_TIME! >> %RESULTS_FILE%
     )
 )
 

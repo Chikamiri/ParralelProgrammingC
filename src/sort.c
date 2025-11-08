@@ -21,7 +21,7 @@ void insertionSort(int arr[], int n, int ascending) {
 }
 
 // ====================== MERGE VERSIONS ====================== //
-static void merge_serial(int arr[], int l, int m, int r, int ascending) {
+void merge_serial(int arr[], int l, int m, int r, int ascending) {
   int n1 = m - l + 1, n2 = r - m;
   int *L = malloc(n1 * sizeof(int));
   int *R = malloc(n2 * sizeof(int));
@@ -44,8 +44,8 @@ static void merge_serial(int arr[], int l, int m, int r, int ascending) {
   free(R);
 }
 
-static void merge_parallel(int arr[], int chunk_starts[], int chunk_sizes[],
-                           int num_chunks, int ascending) {
+void merge_parallel(int arr[], int chunk_starts[], int chunk_sizes[],
+                    int num_chunks, int ascending) {
   int *temp = malloc(sizeof(int) * (chunk_starts[num_chunks - 1] +
                                     chunk_sizes[num_chunks - 1])); // tạm
   while (num_chunks > 1) {
@@ -71,8 +71,8 @@ static void merge_parallel(int arr[], int chunk_starts[], int chunk_sizes[],
   free(temp);
 }
 
-static void merge_tree(int arr[], int chunk_starts[], int chunk_sizes[],
-                       int num_chunks, int ascending) {
+void merge_tree(int arr[], int chunk_starts[], int chunk_sizes[],
+                int num_chunks, int ascending) {
   int *temp = malloc(sizeof(int) * (chunk_starts[num_chunks - 1] +
                                     chunk_sizes[num_chunks - 1]));
   int cur_chunks = num_chunks;
