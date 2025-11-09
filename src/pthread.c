@@ -9,7 +9,7 @@ int main(int argc, char *argv[]) {
             "Usage: %s <array_size> <num_threads> <mode> <merge_version>\n",
             argv[0]);
     fprintf(stderr, "<mode>: 1 = ascending, 0 = descending\n");
-    fprintf(stderr, "<merge_version>: 0=serial, 1=parallel, 2=tree\n");
+    fprintf(stderr, "<merge_version>: 0=serial, 1=tree\n");
     return 1;
   }
 
@@ -33,9 +33,7 @@ int main(int argc, char *argv[]) {
   printf("Array size: %d\n", n);
   printf("Threads: %d\n", p);
   printf("Mode: %s\n", ascending ? "Ascending" : "Descending");
-  printf("Merge version: %s\n", merge_ver == 0   ? "Serial"
-                                : merge_ver == 1 ? "Parallel"
-                                                 : "Tree");
+  printf("Merge version: %s\n", merge_ver == 0 ? "Serial" : "Tree");
 
   double start_time = get_time();
   insertionSort_pthread(arr, n, p, ascending, merge_ver);

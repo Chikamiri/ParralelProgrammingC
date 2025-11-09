@@ -7,7 +7,7 @@ int main(int argc, char *argv[]) {
   if (argc != 4) {
     fprintf(stderr, "Usage: %s <array_size> <num_threads> <merge_version>\n",
             argv[0]);
-    fprintf(stderr, "<merge_version>: 0=serial, 1=parallel, 2=tree\n");
+    fprintf(stderr, "<merge_version>: 0=serial, 1=tree\n");
     return 1;
   }
 
@@ -15,7 +15,7 @@ int main(int argc, char *argv[]) {
   int p = atoi(argv[2]);
   int merge_v = atoi(argv[3]);
 
-  if (n <= 0 || p <= 0 || merge_v < 0 || merge_v > 2) {
+  if (n <= 0 || p <= 0 || merge_v < 0 || merge_v > 1) {
     fprintf(stderr, "Invalid arguments.\n");
     return 1;
   }
@@ -30,9 +30,7 @@ int main(int argc, char *argv[]) {
   printf("OpenMP Insertion Sort\n");
   printf("Array size: %d\n", n);
   printf("Threads: %d\n", p);
-  printf("Merge version: %s\n", merge_ver == 0   ? "Serial"
-                                : merge_ver == 1 ? "Parallel"
-                                                 : "Tree");
+  printf("Merge version: %s\n", merge_ver == 0 ? "Serial" : "Tree");
 
   double start_time = get_time();
   insertionSort_omp(arr, n, 1, merge_ver); // 1 = ascending

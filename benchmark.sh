@@ -10,8 +10,7 @@ BUILD_DIR="build"
 
 declare -A MERGE_NAME
 MERGE_NAME[0]="Serial"
-MERGE_NAME[1]="Parallel"
-MERGE_NAME[2]="Tree"
+MERGE_NAME[1]="Tree"
 
 echo "=== Rebuild Project ==="
 rm -rf ${BUILD_DIR} ${LOG_DIR}

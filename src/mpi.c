@@ -25,7 +25,7 @@ int main(int argc, char *argv[]) {
   int merge_v = atoi(argv[3]);
 
   if (n <= 0 || (ascending != 0 && ascending != 1) || merge_v < 0 ||
-      merge_v > 2) {
+      merge_v > 1) {
     if (rank == 0)
       fprintf(stderr, "Invalid arguments.\n");
     MPI_Finalize();
@@ -81,9 +81,6 @@ int main(int argc, char *argv[]) {
         merge_serial(gathered_arr, 0, displs[i] - 1,
                      displs[i] + send_counts[i] - 1, ascending);
       break;
-    case MERGE_PARALLEL:
-      merge_parallel(gathered_arr, displs, send_counts, size, ascending);
-      break;
     case MERGE_TREE:
       merge_tree(gathered_arr, displs, send_counts, size, ascending);
       break;
@@ -95,9 +92,8 @@ int main(int argc, char *argv[]) {
     printf("MPI Insertion Sort\n");
     printf("Array size: %d\n", n);
     printf("Processes: %d\n", size);
-    printf("Merge version: %s\n", merge_ver == MERGE_SERIAL     ? "Serial"
-                                  : merge_ver == MERGE_PARALLEL ? "Parallel"
-                                                                : "Tree");
+    printf("Merge version: %s\n",
+           merge_ver == MERGE_SERIAL ? "Serial" : "Tree");
     printf("Total execution time (sort+merge): %f seconds\n",
            end_time - start_time);
     printf("Merge time only: %f seconds\n", merge_end - merge_start);

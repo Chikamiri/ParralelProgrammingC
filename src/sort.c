@@ -44,33 +44,6 @@ void merge_serial(int arr[], int l, int m, int r, int ascending) {
   free(R);
 }
 
-void merge_parallel(int arr[], int chunk_starts[], int chunk_sizes[],
-                    int num_chunks, int ascending) {
-  int *temp = malloc(sizeof(int) * (chunk_starts[num_chunks - 1] +
-                                    chunk_sizes[num_chunks - 1])); // tạm
-  while (num_chunks > 1) {
-#pragma omp parallel for
-    for (int i = 0; i < num_chunks / 2; i++) {
-      int l = chunk_starts[2 * i];
-      int m = l + chunk_sizes[2 * i] - 1;
-      int r = m + chunk_sizes[2 * i + 1];
-      merge_serial(arr, l, m, r, ascending);
-    }
-    // cập nhật chunk_starts & chunk_sizes
-    for (int i = 0; i < num_chunks / 2; i++) {
-      chunk_sizes[i] = chunk_sizes[2 * i] + chunk_sizes[2 * i + 1];
-      chunk_starts[i] = chunk_starts[2 * i];
-    }
-    if (num_chunks % 2 == 1) {
-      chunk_sizes[num_chunks / 2] = chunk_sizes[num_chunks - 1];
-      chunk_starts[num_chunks / 2] = chunk_starts[num_chunks - 1];
-      num_chunks = num_chunks / 2 + 1;
-    } else
-      num_chunks /= 2;
-  }
-  free(temp);
-}
-
 void merge_tree(int arr[], int chunk_starts[], int chunk_sizes[],
                 int num_chunks, int ascending) {
   int *temp = malloc(sizeof(int) * (chunk_starts[num_chunks - 1] +
@@ -137,9 +110,6 @@ void insertionSort_omp(int arr[], int n, int ascending,
       merge_serial(arr, 0, chunk_starts[i] - 1,
                    chunk_starts[i] + chunk_sizes[i] - 1, ascending);
     break;
-  case MERGE_PARALLEL:
-    merge_parallel(arr, chunk_starts, chunk_sizes, num_threads, ascending);
-    break;
   case MERGE_TREE:
     merge_tree(arr, chunk_starts, chunk_sizes, num_threads, ascending);
     break;
@@ -196,9 +166,6 @@ void insertionSort_pthread(int arr[], int n, int num_threads, int ascending,
     for (int i = 1; i < num_threads; i++)
       merge_serial(arr, 0, chunk_starts[i] - 1,
                    chunk_starts[i] + chunk_sizes[i] - 1, ascending);
-    break;
-  case MERGE_PARALLEL:
-    merge_parallel(arr, chunk_starts, chunk_sizes, num_threads, ascending);
     break;
   case MERGE_TREE:
     merge_tree(arr, chunk_starts, chunk_sizes, num_threads, ascending);

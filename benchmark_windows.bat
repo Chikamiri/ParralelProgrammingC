@@ -8,8 +8,7 @@ set RESULTS_FILE=results_windows.csv
 set LOG_DIR=logs
 
 set MERGE_NAME_0=Serial
-set MERGE_NAME_1=Parallel
-set MERGE_NAME_2=Tree
+set MERGE_NAME_1=Tree
 
 if exist build rmdir /s /q build
 mkdir build
