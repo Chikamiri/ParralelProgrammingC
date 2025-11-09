@@ -3,7 +3,7 @@ setlocal enabledelayedexpansion
 
 set ARRAY_SIZE=100000
 set THREAD_COUNTS=2 4 6 8 10 12
-set MERGE_VERSIONS=0 1 2
+set MERGE_VERSIONS=0 1
 set RESULTS_FILE=results_windows.csv
 set LOG_DIR=logs
 
@@ -26,8 +26,7 @@ echo Version,Threads,ArraySize,MergeVersion,MergeTime,TotalTime > %RESULTS_FILE%
 echo === Sequential ===
 build\seq.exe %ARRAY_SIZE% > %LOG_DIR%\seq.log 2>&1
 for /f "tokens=3" %%a in ('findstr "Execution time" %LOG_DIR%\seq.log') do set SORT_TIME=%%a
-for /f "tokens=4" %%b in ('findstr "Total execution time" %LOG_DIR%\seq.log') do set TOTAL_TIME=%%b
-echo Sequential,1,%ARRAY_SIZE%,NA,!SORT_TIME!,!TOTAL_TIME! >> %RESULTS_FILE%
+echo Sequential,1,%ARRAY_SIZE%,NA,NA,!SORT_TIME! >> %RESULTS_FILE%
 
 :: ====================== OpenMP ======================
 echo === OpenMP ===
@@ -40,8 +39,8 @@ for %%p in (%THREAD_COUNTS%) do (
         build\omp.exe %ARRAY_SIZE% %%p %%m >> !LOG_FILE! 2>&1
         echo. >> !LOG_FILE!
 
-        for /f "tokens=3" %%s in ('findstr "Merge time" !LOG_FILE!') do set MERGE_TIME=%%s
-        for /f "tokens=4" %%t in ('findstr "Total execution time" !LOG_FILE!') do set TOTAL_TIME=%%t
+        for /f %%a in ('powershell -Command "(Select-String 'Merge time' '!LOG_FILE!').Line -replace '.*:','' -replace ' seconds',''"') do set MERGE_TIME=%%a
+        for /f %%a in ('powershell -Command "(Select-String 'Total execution time' '!LOG_FILE!').Line -replace '.*:','' -replace ' seconds',''"') do set TOTAL_TIME=%%a
 
         set MERGE_NAME=!MERGE_NAME_%%m!
         echo OpenMP,%%p,%ARRAY_SIZE%,!MERGE_NAME!,!MERGE_TIME!,!TOTAL_TIME! >> %RESULTS_FILE%
@@ -59,8 +58,8 @@ for %%p in (%THREAD_COUNTS%) do (
         build\pthread.exe %ARRAY_SIZE% %%p 1 %%m >> !LOG_FILE! 2>&1
         echo. >> !LOG_FILE!
 
-        for /f "tokens=3" %%s in ('findstr "Merge time" !LOG_FILE!') do set MERGE_TIME=%%s
-        for /f "tokens=4" %%t in ('findstr "Total execution time" !LOG_FILE!') do set TOTAL_TIME=%%t
+        for /f %%a in ('powershell -Command "(Select-String 'Merge time' '!LOG_FILE!').Line -replace '.*:','' -replace ' seconds',''"') do set MERGE_TIME=%%a
+        for /f %%a in ('powershell -Command "(Select-String 'Total execution time' '!LOG_FILE!').Line -replace '.*:','' -replace ' seconds',''"') do set TOTAL_TIME=%%a
 
         set MERGE_NAME=!MERGE_NAME_%%m!
         echo Pthreads,%%p,%ARRAY_SIZE%,!MERGE_NAME!,!MERGE_TIME!,!TOTAL_TIME! >> %RESULTS_FILE%

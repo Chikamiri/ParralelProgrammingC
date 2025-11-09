@@ -2,7 +2,7 @@
 
 ARRAY_SIZE=100000
 THREAD_COUNTS="2 4 6 8 10 12"
-MERGE_VERSIONS="0 1 2"
+MERGE_VERSIONS="0 1"
 MPI_PROCESSES="2 4 6 8 10 12"
 RESULTS_FILE="results_linux.csv"
 LOG_DIR="logs"
@@ -27,8 +27,7 @@ echo "=== Sequential ==="
 SEQ_LOG="${LOG_DIR}/seq.log"
 ./${BUILD_DIR}/seq ${ARRAY_SIZE} > ${SEQ_LOG} 2>&1
 SORT_TIME=$(grep "Execution time" ${SEQ_LOG} | awk '{print $3}')
-TOTAL_TIME=$(grep "Total execution time" ${SEQ_LOG} | awk '{print $5}')
-echo "Sequential,1,${ARRAY_SIZE},NA,${SORT_TIME},${TOTAL_TIME}" >> ${RESULTS_FILE}
+echo "Sequential,1,${ARRAY_SIZE},NA,NA,${SORT_TIME}" >> ${RESULTS_FILE}
 
 # ====================== OpenMP ======================
 echo "=== OpenMP ==="
@@ -72,8 +71,9 @@ for p in ${MPI_PROCESSES}; do
         echo "Merge version: ${MERGE_NAME[$m]}" >> ${LOG_FILE}
         mpiexec --oversubscribe -n ${p} ./${BUILD_DIR}/mpi ${ARRAY_SIZE} 1 ${m} >> ${LOG_FILE} 2>&1
         echo "" >> ${LOG_FILE}
+        MERGE_TIME=$(grep "Merge time" ${LOG_FILE} | tail -n1 | awk '{print $3}')
         TOTAL_TIME=$(grep "Total execution time" ${LOG_FILE} | tail -n1 | awk '{print $5}')
-        echo "MPI,${p},${ARRAY_SIZE},${MERGE_NAME[$m]},,${TOTAL_TIME}" >> ${RESULTS_FILE}
+        echo "MPI,${p},${ARRAY_SIZE},${MERGE_NAME[$m]},${MERGE_TIME},${TOTAL_TIME}" >> ${RESULTS_FILE}
     done
 done
 

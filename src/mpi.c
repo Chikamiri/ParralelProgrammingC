@@ -94,9 +94,9 @@ int main(int argc, char *argv[]) {
     printf("Processes: %d\n", size);
     printf("Merge version: %s\n",
            merge_ver == MERGE_SERIAL ? "Serial" : "Tree");
+    printf("Merge time: %f seconds\n", merge_end - merge_start);
     printf("Total execution time (sort+merge): %f seconds\n",
            end_time - start_time);
-    printf("Merge time only: %f seconds\n", merge_end - merge_start);
 
     free(temp_arr);
     free(gathered_arr);
